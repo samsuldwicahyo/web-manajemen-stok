@@ -1,0 +1,66 @@
+<?php
+session_start();
+if (!isset($_SESSION['username'])) {
+    header("Location: login.php");
+    exit();
+}
+
+include 'config.php';
+
+// Filter berdasarkan tanggal
+$start_date = $_GET['start_date'] ?? date('Y-m-01'); // Awal bulan
+$end_date = $_GET['end_date'] ?? date('Y-m-d'); // Hari ini
+
+// Query untuk rekap penjualan
+$query_sales = "
+    SELECT products.product_name, SUM(sales.amount) AS total_sold, COUNT(sales.id) AS transactions
+    FROM sales
+    JOIN products ON sales.product_id = products.id
+    WHERE DATE(sales.sale_date) BETWEEN '$start_date' AND '$end_date'
+    GROUP BY products.id
+";
+$result_sales = mysqli_query($conn, $query_sales);
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rekap Penjualan</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+    <div class="rekap-container">
+        <h1>Rekapitulasi Penjualan</h1>
+        <form method="GET" action="">
+            <div class="form-group">
+                <label for="start_date">Tanggal Mulai</label>
+                <input type="date" id="start_date" name="start_date" value="<?= $start_date; ?>" required>
+            </div>
+            <div class="form-group">
+                <label for="end_date">Tanggal Akhir</label>
+                <input type="date" id="end_date" name="end_date" value="<?= $end_date; ?>" required>
+            </div>
+            <button type="submit" class="btn">Filter</button>
+        </form>
+        <table>
+            <thead>
+                <tr>
+                    <th>Nama Barang</th>
+                    <th>Jumlah Terjual</th>
+                    <th>Jumlah Transaksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php while ($row = mysqli_fetch_assoc($result_sales)): ?>
+                    <tr>
+                        <td><?= $row['product_name']; ?></td>
+                        <td><?= $row['total_sold']; ?></td>
+                        <td><?= $row['transactions']; ?></td>
+                    </tr>
+                <?php endwhile; ?>
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>
